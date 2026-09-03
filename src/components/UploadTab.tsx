@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { UploadCloud, FileCheck, QrCode, Download, Copy, Check, ShieldCheck, AlertCircle, RefreshCw, Barcode, Eye } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { UploadCloud, FileCheck, QrCode, Download, Copy, Check, ShieldCheck, AlertCircle, RefreshCw, Barcode, Eye, Globe } from 'lucide-react';
 import { GeneratedCodes } from '@/lib/barcode';
+import Tooltip from './Tooltip';
 
 interface UploadTabProps {
   authenticated: boolean;
@@ -10,13 +11,29 @@ interface UploadTabProps {
   onSuccessUpload: () => void;
 }
 
+const LANGUAGES = [
+  { code: 'DE', label: 'Deutsch 🇩🇪' },
+  { code: 'EN', label: 'Englisch 🇬🇧' },
+  { code: 'FR', label: 'Französisch 🇫🇷' },
+  { code: 'IT', label: 'Italienisch 🇮🇹' },
+  { code: 'ES', label: 'Spanisch 🇪🇸' },
+  { code: 'MULTI', label: 'Mehrsprachig 🇪🇺' },
+];
+
 export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload }: UploadTabProps) {
   const [file, setFile] = useState<File | null>(null);
   const [sku, setSku] = useState('');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Konformitätserklärung');
+  const [language, setLanguage] = useState('DE');
   const [comment, setComment] = useState('Erstupload v1 (PPWR Konformität)');
-  
+  const [categories, setCategories] = useState<string[]>([
+    'Konformitätserklärung',
+    'Anleitung',
+    'Datenblatt',
+    'Sonstiges Compliance-Dokument',
+  ]);
+
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   const [successResult, setSuccessResult] = useState<{
@@ -29,12 +46,29 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.categories && data.categories.length > 0) {
+            setCategories(data.categories);
+            setCategory(data.categories[0]);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadCategories();
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
       if (!title) {
-        // Auto fill title from filename without extension
         const nameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, '');
         setTitle(nameWithoutExt);
       }
@@ -73,6 +107,7 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
       formData.append('sku', sku);
       formData.append('title', title);
       formData.append('category', category);
+      formData.append('language', language);
       formData.append('comment', comment);
 
       const res = await fetch('/api/documents', {
@@ -168,49 +203,56 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* File Dropzone */}
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
-                  file
-                    ? 'border-emerald-500/50 bg-emerald-500/5'
-                    : 'border-slate-700 hover:border-emerald-500/40 bg-slate-900/40 hover:bg-slate-900/60'
-                }`}
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept=".pdf,application/pdf"
-                  className="hidden"
-                />
-                {file ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                      <FileCheck size={24} />
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-slate-300 flex items-center">
+                  Dokumentendatei (PDF) *
+                  <Tooltip content="Wähle die PDF-Datei deiner Konformitätserklärung, Entsorgungsanleitung oder Materialdatenblatt." />
+                </label>
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                    file
+                      ? 'border-emerald-500/50 bg-emerald-500/5'
+                      : 'border-slate-700 hover:border-emerald-500/40 bg-slate-900/40 hover:bg-slate-900/60'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept=".pdf,application/pdf"
+                    className="hidden"
+                  />
+                  {file ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <FileCheck size={24} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-medium text-slate-100 truncate max-w-xs">{file.name}</p>
+                        <p className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB • PDF</p>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-slate-100 truncate max-w-xs">{file.name}</p>
-                      <p className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB • PDF</p>
+                  ) : (
+                    <div className="space-y-2">
+                      <UploadCloud size={36} className="mx-auto text-slate-500" />
+                      <p className="text-sm font-medium text-slate-200">
+                        Klicke hier oder ziehe eine PDF-Datei hinein
+                      </p>
+                      <p className="text-xs text-slate-500">PDFs bis 50 MB (Konformitätserklärung, Anleitung, Datenblatt)</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <UploadCloud size={36} className="mx-auto text-slate-500" />
-                    <p className="text-sm font-medium text-slate-200">
-                      Klicke hier oder ziehe eine PDF-Datei hinein
-                    </p>
-                    <p className="text-xs text-slate-500">PDFs bis 50 MB (Konformitätserklärung, Anleitung, Datenblatt)</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Form fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    SKU / Artikelnummer / Verpackungs-ID *
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
+                    SKU / Artikelnummer *
+                    <Tooltip content="Eindeutige Artikelnummer oder Verpackungs-ID zur Identifikation der Verpackung." />
                   </label>
                   <input
                     type="text"
@@ -223,34 +265,64 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Dokumenten-Kategorie</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
+                    Dokumenten-Sprache
+                    <Tooltip content="Sprache, in der das Dokument abgefasst ist (gem. PPWR Sprachanforderungen)." />
+                  </label>
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="input-field w-full"
+                  >
+                    {LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
+                    Kategorie
+                    <Tooltip content="Verwaltungs-Kategorie für dieses Compliance-Dokument." />
+                  </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className="input-field w-full"
                   >
-                    <option value="Konformitätserklärung">Konformitätserklärung (PPWR)</option>
-                    <option value="Anleitung">Bedienungs- / Entsorgungsanleitung</option>
-                    <option value="Datenblatt">Materialdatenblatt</option>
-                    <option value="Sonstiges">Sonstiges Compliance-Dokument</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
+                    Dokumentenbezeichnung *
+                    <Tooltip content="Freier Name des Dokuments für die Übersicht im Archiv." />
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="z.B. PPWR Konformitätserklärung Kartonage"
+                    className="input-field w-full"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Dokumentenbezeichnung *</label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="z.B. PPWR Konformitätserklärung Kartonage 2026"
-                  className="input-field w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Revisionsnotiz (Initial v1)</label>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
+                  Revisionsnotiz (v1)
+                  <Tooltip content="Revisionssichere Anmerkung zum Anlass des Uploads oder zur Versionsänderung." />
+                </label>
                 <input
                   type="text"
                   value={comment}

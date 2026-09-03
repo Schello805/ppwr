@@ -5,12 +5,15 @@ import Header from '@/components/Header';
 import UploadTab from '@/components/UploadTab';
 import ArchiveTab from '@/components/ArchiveTab';
 import LoginModal from '@/components/LoginModal';
+import SettingsModal from '@/components/SettingsModal';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'upload' | 'archive'>('upload');
   const [authenticated, setAuthenticated] = useState(false);
   const [username, setUsername] = useState<string | undefined>(undefined);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const checkAuth = async () => {
     try {
@@ -40,7 +43,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between">
+    <div className="min-h-screen flex flex-col justify-between" key={refreshKey}>
       <div>
         <Header
           activeTab={activeTab}
@@ -48,6 +51,7 @@ export default function Home() {
           authenticated={authenticated}
           username={username}
           onOpenLogin={() => setIsLoginOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
           onLogout={handleLogout}
         />
 
@@ -80,6 +84,15 @@ export default function Home() {
         onClose={() => setIsLoginOpen(false)}
         onSuccess={() => {
           checkAuth();
+        }}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onSettingsUpdated={() => {
+          setRefreshKey((k) => k + 1);
         }}
       />
     </div>

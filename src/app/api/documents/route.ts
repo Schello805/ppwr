@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
     const sku = (formData.get('sku') as string)?.trim();
     const title = (formData.get('title') as string)?.trim();
     const category = (formData.get('category') as string)?.trim() || 'Konformitätserklärung';
+    const language = (formData.get('language') as string)?.trim() || 'DE';
     const comment = (formData.get('comment') as string)?.trim() || 'Initialer Upload (v1)';
 
     if (!file || !sku || !title) {
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
         sku,
         title,
         category,
+        language,
         revisions: {
           create: {
             revisionNumber: 1,
@@ -96,7 +98,7 @@ export async function POST(req: NextRequest) {
         auditLogs: {
           create: {
             action: 'DOCUMENT_CREATED',
-            details: `Dokument "${title}" (SKU: ${sku}) mit Revision 1 erstellt. Hash: ${sha256Hash}`,
+            details: `Dokument "${title}" (SKU: ${sku}, Sprache: ${language}) mit Revision 1 erstellt. Hash: ${sha256Hash}`,
             user: currentUser.username,
           },
         },
@@ -106,8 +108,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Generate codes
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    // Generate codes with Custom Domain if set
+    const { getActiveBaseUrl } = await import('@/lib/domain');
+    const baseUrl = await getActiveBaseUrl();
     const publicUrl = `${baseUrl}/doc/${document.publicToken}`;
     const codes = await generateDocumentCodes(publicUrl, document.sku);
 

@@ -7,7 +7,6 @@ import {
   History,
   QrCode,
   Download,
-  ExternalLink,
   PlusCircle,
   Copy,
   Check,
@@ -15,8 +14,11 @@ import {
   Eye,
   AlertCircle,
   X,
-  FileCheck,
   Lock,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Globe,
 } from 'lucide-react';
 import { GeneratedCodes } from '@/lib/barcode';
 
@@ -36,6 +38,7 @@ export interface DocumentData {
   sku: string;
   title: string;
   category: string;
+  language: string;
   publicToken: string;
   createdAt: string;
   updatedAt: string;
@@ -47,12 +50,21 @@ interface ArchiveTabProps {
   onOpenLogin: () => void;
 }
 
+type SortField = 'sku' | 'title' | 'category' | 'language' | 'revision' | 'updatedAt';
+type SortOrder = 'asc' | 'desc';
+
 export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabProps) {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [languageFilter, setLanguageFilter] = useState('ALL');
+  const [categories, setCategories] = useState<string[]>([]);
+
+  // Sorting state
+  const [sortField, setSortField] = useState<SortField>('updatedAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   // Modals state
   const [historyDoc, setHistoryDoc] = useState<DocumentData | null>(null);
@@ -88,9 +100,31 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.categories) setCategories(data.categories);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchDocuments();
+    fetchCategories();
   }, [authenticated]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
 
   const handleOpenCodes = async (doc: DocumentData) => {
     try {
@@ -157,13 +191,39 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
     document.body.removeChild(element);
   };
 
+  // Filter logic
   const filteredDocs = documents.filter((doc) => {
     const matchesSearch =
       doc.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === 'ALL' || doc.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const matchesLanguage = languageFilter === 'ALL' || doc.language === languageFilter;
+    return matchesSearch && matchesCategory && matchesLanguage;
   });
+
+  // Sorting logic
+  const sortedDocs = [...filteredDocs].sort((a, b) => {
+    let aValue: any = a[sortField as keyof DocumentData];
+    let bValue: any = b[sortField as keyof DocumentData];
+
+    if (sortField === 'revision') {
+      aValue = a.revisions[0]?.revisionNumber || 0;
+      bValue = b.revisions[0]?.revisionNumber || 0;
+    }
+
+    if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown size={12} className="text-slate-600 ml-1" />;
+    return sortOrder === 'asc' ? (
+      <ArrowUp size={12} className="text-emerald-400 ml-1" />
+    ) : (
+      <ArrowDown size={12} className="text-emerald-400 ml-1" />
+    );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -199,10 +259,26 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
             className="input-field text-xs py-2.5"
           >
             <option value="ALL">Alle Kategorien</option>
-            <option value="Konformitätserklärung">Konformitätserklärungen</option>
-            <option value="Anleitung">Anleitungen</option>
-            <option value="Datenblatt">Materialdatenblätter</option>
-            <option value="Sonstiges">Sonstiges</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+
+          {/* Language Filter */}
+          <select
+            value={languageFilter}
+            onChange={(e) => setLanguageFilter(e.target.value)}
+            className="input-field text-xs py-2.5"
+          >
+            <option value="ALL">Alle Sprachen</option>
+            <option value="DE">Deutsch 🇩🇪</option>
+            <option value="EN">Englisch 🇬🇧</option>
+            <option value="FR">Französisch 🇫🇷</option>
+            <option value="IT">Italienisch 🇮🇹</option>
+            <option value="ES">Spanisch 🇪🇸</option>
+            <option value="MULTI">Mehrsprachig 🇪🇺</option>
           </select>
         </div>
       </div>
@@ -233,33 +309,76 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
             <table className="w-full text-left text-sm text-slate-300">
               <thead className="bg-slate-900/90 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
                 <tr>
-                  <th className="px-6 py-4">SKU / Verpackung</th>
-                  <th className="px-6 py-4">Dokumententitel</th>
-                  <th className="px-6 py-4">Kategorie</th>
-                  <th className="px-6 py-4 text-center">Revisionsstufe</th>
+                  <th
+                    onClick={() => handleSort('sku')}
+                    className="px-6 py-4 cursor-pointer hover:text-white transition-colors"
+                  >
+                    <span className="flex items-center">
+                      SKU / Verpackung {renderSortIcon('sku')}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => handleSort('title')}
+                    className="px-6 py-4 cursor-pointer hover:text-white transition-colors"
+                  >
+                    <span className="flex items-center">
+                      Dokumententitel {renderSortIcon('title')}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => handleSort('category')}
+                    className="px-6 py-4 cursor-pointer hover:text-white transition-colors"
+                  >
+                    <span className="flex items-center">
+                      Kategorie {renderSortIcon('category')}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => handleSort('language')}
+                    className="px-6 py-4 cursor-pointer hover:text-white transition-colors"
+                  >
+                    <span className="flex items-center">
+                      Sprache {renderSortIcon('language')}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => handleSort('revision')}
+                    className="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors"
+                  >
+                    <span className="flex items-center justify-center">
+                      Revisionsstufe {renderSortIcon('revision')}
+                    </span>
+                  </th>
                   <th className="px-6 py-4">SHA-256 Checksumme</th>
-                  <th className="px-6 py-4">Aktualisiert</th>
+                  <th
+                    onClick={() => handleSort('updatedAt')}
+                    className="px-6 py-4 cursor-pointer hover:text-white transition-colors"
+                  >
+                    <span className="flex items-center">
+                      Aktualisiert {renderSortIcon('updatedAt')}
+                    </span>
+                  </th>
                   <th className="px-6 py-4 text-right">Aktionen</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
                         <span>Lade Dokumente...</span>
                       </div>
                     </td>
                   </tr>
-                ) : filteredDocs.length === 0 ? (
+                ) : sortedDocs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                       Keine Dokumente gefunden.
                     </td>
                   </tr>
                 ) : (
-                  filteredDocs.map((doc) => {
+                  sortedDocs.map((doc) => {
                     const latestRev = doc.revisions[0];
                     const publicUrl = `${window.location.origin}/doc/${doc.publicToken}`;
 
@@ -272,6 +391,9 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
                         </td>
                         <td className="px-6 py-4">
                           <span className="badge-blue">{doc.category}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="badge-amber font-mono">{doc.language || 'DE'}</span>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className="badge-green font-bold">v{latestRev?.revisionNumber || 1}</span>

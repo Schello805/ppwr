@@ -1,6 +1,6 @@
 'use client';
 
-import { QrCode, FileText, ShieldCheck, LogIn, LogOut, User as UserIcon, Package } from 'lucide-react';
+import { QrCode, FileText, ShieldCheck, LogIn, LogOut, User as UserIcon, Package, Settings } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: 'upload' | 'archive';
@@ -8,6 +8,7 @@ interface HeaderProps {
   authenticated: boolean;
   username?: string;
   onOpenLogin: () => void;
+  onOpenSettings: () => void;
   onLogout: () => void;
 }
 
@@ -17,6 +18,7 @@ export default function Header({
   authenticated,
   username,
   onOpenLogin,
+  onOpenSettings,
   onLogout,
 }: HeaderProps) {
   return (
@@ -66,23 +68,34 @@ export default function Header({
           </button>
         </div>
 
-        {/* User Auth Section */}
+        {/* User Auth & Settings Section */}
         <div className="flex items-center gap-3">
           {authenticated ? (
-            <div className="flex items-center gap-3 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/80">
-              <div className="flex items-center gap-2 text-xs text-slate-300">
-                <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                  <UserIcon size={14} />
-                </div>
-                <span className="font-medium text-slate-200">{username}</span>
-              </div>
+            <div className="flex items-center gap-2">
               <button
-                onClick={onLogout}
-                title="Abmelden"
-                className="text-slate-400 hover:text-red-400 p-1 rounded-lg transition-colors"
+                onClick={onOpenSettings}
+                className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 text-slate-300 hover:text-emerald-400"
+                title="Einstellungen (Domain & Kategorien)"
               >
-                <LogOut size={16} />
+                <Settings size={15} />
+                <span className="hidden sm:inline">Einstellungen</span>
               </button>
+
+              <div className="flex items-center gap-3 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/80">
+                <div className="flex items-center gap-2 text-xs text-slate-300">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <UserIcon size={14} />
+                  </div>
+                  <span className="font-medium text-slate-200">{username}</span>
+                </div>
+                <button
+                  onClick={onLogout}
+                  title="Abmelden"
+                  className="text-slate-400 hover:text-red-400 p-1 rounded-lg transition-colors"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
             </div>
           ) : (
             <button onClick={onOpenLogin} className="btn-secondary text-xs py-2 px-3">

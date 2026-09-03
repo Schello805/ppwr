@@ -20,7 +20,8 @@ model Document {
   id            String             @id @default(uuid())
   sku           String
   title         String
-  category      String             // "Konformitätserklärung", "Anleitung", "Datenblatt", "Sonstiges"
+  category      String             // "Konformitätserklärung", "Anleitung", "Datenblatt", etc.
+  language      String             @default("DE") // "DE", "EN", "FR", "IT", "ES", "MULTI"
   publicToken   String             @unique @default(uuid())
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
@@ -49,9 +50,15 @@ model AuditLog {
   id         String    @id @default(uuid())
   documentId String?
   document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
-  action     String    // e.g. "DOCUMENT_CREATED", "REVISION_ADDED", "PUBLIC_VIEWED"
+  action     String
   details    String
   user       String?
   ipAddress  String?
   createdAt  DateTime  @default(now())
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
