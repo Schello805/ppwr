@@ -249,9 +249,9 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
 
               {/* Form fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
-                    SKU / Artikelnummer *
+                <div className="flex flex-col justify-end">
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center h-5">
+                    <span>SKU / Artikelnummer *</span>
                     <Tooltip content="Eindeutige Artikelnummer oder Verpackungs-ID zur Identifikation der Verpackung." />
                   </label>
                   <input
@@ -264,9 +264,9 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
-                    Dokumenten-Sprache
+                <div className="flex flex-col justify-end">
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center h-5">
+                    <span>Dokumenten-Sprache</span>
                     <Tooltip content="Sprache, in der das Dokument abgefasst ist (gem. PPWR Sprachanforderungen)." />
                   </label>
                   <select
@@ -284,9 +284,9 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
-                    Kategorie
+                <div className="flex flex-col justify-end">
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center h-5">
+                    <span>Kategorie</span>
                     <Tooltip content="Verwaltungs-Kategorie für dieses Compliance-Dokument." />
                   </label>
                   <select
@@ -302,9 +302,9 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
-                    Dokumentenbezeichnung *
+                <div className="flex flex-col justify-end">
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center h-5">
+                    <span>Dokumentenbezeichnung *</span>
                     <Tooltip content="Freier Name des Dokuments für die Übersicht im Archiv." />
                   </label>
                   <input
