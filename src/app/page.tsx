@@ -4,14 +4,13 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import UploadTab from '@/components/UploadTab';
 import ArchiveTab from '@/components/ArchiveTab';
-import LoginModal from '@/components/LoginModal';
+import LoginScreen from '@/components/LoginScreen';
 import SettingsModal from '@/components/SettingsModal';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'upload' | 'archive'>('upload');
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [username, setUsername] = useState<string | undefined>(undefined);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -42,6 +41,21 @@ export default function Home() {
     setUsername(undefined);
   };
 
+  // Loading spinner during initial auth check
+  if (authenticated === null) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // If not authenticated, render full-screen login protection
+  if (!authenticated) {
+    return <LoginScreen onLoginSuccess={checkAuth} />;
+  }
+
+  // Authenticated full app view
   return (
     <div className="min-h-screen flex flex-col justify-between" key={refreshKey}>
       <div>
@@ -50,7 +64,7 @@ export default function Home() {
           setActiveTab={setActiveTab}
           authenticated={authenticated}
           username={username}
-          onOpenLogin={() => setIsLoginOpen(true)}
+          onOpenLogin={() => {}}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onLogout={handleLogout}
         />
@@ -59,13 +73,11 @@ export default function Home() {
           {activeTab === 'upload' ? (
             <UploadTab
               authenticated={authenticated}
-              onOpenLogin={() => setIsLoginOpen(true)}
-              onSuccessUpload={() => {
-                // Optional action after success
-              }}
+              onOpenLogin={() => {}}
+              onSuccessUpload={() => {}}
             />
           ) : (
-            <ArchiveTab authenticated={authenticated} onOpenLogin={() => setIsLoginOpen(true)} />
+            <ArchiveTab authenticated={authenticated} onOpenLogin={() => {}} />
           )}
         </main>
       </div>
@@ -77,15 +89,6 @@ export default function Home() {
           <p className="font-mono text-slate-600">Ubuntu Linux ready • SHA-256 Audit Trail</p>
         </div>
       </footer>
-
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onSuccess={() => {
-          checkAuth();
-        }}
-      />
 
       {/* Settings Modal */}
       <SettingsModal
