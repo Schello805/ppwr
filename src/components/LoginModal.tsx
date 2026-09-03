@@ -73,30 +73,30 @@ export default function LoginModal({ isOpen, onClose, onSuccess }: LoginModalPro
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1.5">Benutzername</label>
-            <div className="relative">
-              <User size={18} className="absolute left-3 top-3 text-slate-500" />
+            <div className="flex items-center gap-2.5 bg-slate-900/80 border border-slate-700/80 rounded-lg px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+              <User size={18} className="text-slate-400 shrink-0" />
               <input
                 type="text"
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="admin"
-                className="input-field w-full pl-10"
+                className="bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none w-full text-sm"
               />
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1.5">Passwort</label>
-            <div className="relative">
-              <Key size={18} className="absolute left-3 top-3 text-slate-500" />
+            <div className="flex items-center gap-2.5 bg-slate-900/80 border border-slate-700/80 rounded-lg px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+              <Key size={18} className="text-slate-400 shrink-0" />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="input-field w-full pl-10"
+                className="bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none w-full text-sm"
               />
             </div>
           </div>

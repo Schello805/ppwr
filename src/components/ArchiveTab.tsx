@@ -266,14 +266,14 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
 
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           {/* Search Input */}
-          <div className="relative flex-1 sm:w-64">
-            <Search size={16} className="absolute left-3 top-3 text-slate-500" />
+          <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-700/80 rounded-lg px-3 py-2 flex-1 sm:w-64 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+            <Search size={16} className="text-slate-400 shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="SKU oder Titel suchen..."
-              className="input-field w-full pl-9 text-xs"
+              className="bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none w-full text-xs"
             />
           </div>
 
