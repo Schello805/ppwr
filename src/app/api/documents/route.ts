@@ -53,6 +53,10 @@ export async function POST(req: NextRequest) {
     const category = (formData.get('category') as string)?.trim() || 'Konformitätserklärung';
     const language = (formData.get('language') as string)?.trim() || 'DE';
     const comment = (formData.get('comment') as string)?.trim() || 'Initialer Upload (v1)';
+    const validUntilStr = formData.get('validUntil') as string | null;
+    const notifyBeforeExpiry = formData.get('notifyBeforeExpiry') !== 'false';
+
+    const validUntil = validUntilStr ? new Date(validUntilStr) : null;
 
     if (!file || !sku || !title) {
       return NextResponse.json(
@@ -83,6 +87,8 @@ export async function POST(req: NextRequest) {
         title,
         category,
         language,
+        validUntil,
+        notifyBeforeExpiry,
         revisions: {
           create: {
             revisionNumber: 1,

@@ -28,6 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const comment = (formData.get('comment') as string)?.trim() || 'Neue Revision';
+    const validUntilStr = formData.get('validUntil') as string | null;
 
     if (!file) {
       return NextResponse.json({ error: 'Datei ist erforderlich' }, { status: 400 });
@@ -62,9 +63,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       },
     });
 
+    const updateData: any = { updatedAt: new Date(), expiryNotified: false };
+    if (validUntilStr !== null && validUntilStr !== undefined) {
+      updateData.validUntil = validUntilStr ? new Date(validUntilStr) : null;
+    }
+
     await prisma.document.update({
       where: { id: document.id },
-      data: { updatedAt: new Date() },
+      data: updateData,
     });
 
     await prisma.auditLog.create({

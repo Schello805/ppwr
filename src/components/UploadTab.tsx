@@ -5,11 +5,7 @@ import { UploadCloud, FileCheck, QrCode, Download, Copy, Check, ShieldCheck, Ale
 import { GeneratedCodes } from '@/lib/barcode';
 import Tooltip from './Tooltip';
 
-interface UploadTabProps {
-  authenticated: boolean;
-  onOpenLogin: () => void;
-  onSuccessUpload: () => void;
-}
+
 
 const LANGUAGES = [
   { code: 'DE', label: 'Deutsch 🇩🇪' },
@@ -20,12 +16,14 @@ const LANGUAGES = [
   { code: 'MULTI', label: 'Mehrsprachig 🇪🇺' },
 ];
 
-export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload }: UploadTabProps) {
+export default function UploadTab() {
   const [file, setFile] = useState<File | null>(null);
   const [sku, setSku] = useState('');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Konformitätserklärung');
   const [language, setLanguage] = useState('DE');
+  const [validUntil, setValidUntil] = useState('');
+  const [notifyBeforeExpiry, setNotifyBeforeExpiry] = useState(true);
   const [comment, setComment] = useState('Erstupload v1 (PPWR Konformität)');
   const [categories, setCategories] = useState<string[]>([
     'Konformitätserklärung',
@@ -88,10 +86,6 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!authenticated) {
-      onOpenLogin();
-      return;
-    }
 
     if (!file || !sku || !title) {
       setError('Bitte wähle eine PDF-Datei aus und fülle SKU und Titel aus.');
@@ -108,6 +102,8 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
       formData.append('title', title);
       formData.append('category', category);
       formData.append('language', language);
+      if (validUntil) formData.append('validUntil', validUntil);
+      formData.append('notifyBeforeExpiry', notifyBeforeExpiry ? 'true' : 'false');
       formData.append('comment', comment);
 
       const res = await fetch('/api/documents', {
@@ -125,7 +121,6 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
           title: data.document.title,
           codes: data.codes,
         });
-        onSuccessUpload();
       }
     } catch (err) {
       setError('Netzwerkfehler beim Upload');
@@ -177,11 +172,6 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
               Lade deine PPWR-Konformitätserklärung, Anleitung oder dein Datenblatt hoch. Die Anwendung generiert automatisch einen **QR-Code**, einen **DataMatrix-Code (GS1)** und einen **Code 128** zum Vektor-Druck auf Verpackungen.
             </p>
           </div>
-          {!authenticated && (
-            <button onClick={onOpenLogin} className="btn-primary text-xs shrink-0 whitespace-nowrap">
-              Admin-Login erforderlich zum Upload
-            </button>
-          )}
         </div>
       </div>
 
@@ -320,7 +310,7 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
 
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
-                  Revisionsnotiz (v1)
+                  <span>Revisionsnotiz (v1)</span>
                   <Tooltip content="Revisionssichere Anmerkung zum Anlass des Uploads oder zur Versionsänderung." />
                 </label>
                 <input
@@ -332,24 +322,47 @@ export default function UploadTab({ authenticated, onOpenLogin, onSuccessUpload 
                 />
               </div>
 
+              {/* Expiry Date & 7-Day Notification */}
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col justify-end">
+                    <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center h-5">
+                      <span>Gültig bis (optional)</span>
+                      <Tooltip content="Optionales Ablaufdatum des Compliance-Dokuments. Nach Ablauf zeigt die öffentliche Verpackungs-Seite eine Kontakt-Hinweisseite an." />
+                    </label>
+                    <input
+                      type="date"
+                      value={validUntil}
+                      onChange={(e) => setValidUntil(e.target.value)}
+                      className="input-field w-full text-xs text-slate-200"
+                    />
+                  </div>
+
+                  <div className="flex flex-col justify-end">
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-300 h-11">
+                      <input
+                        type="checkbox"
+                        checked={notifyBeforeExpiry}
+                        onChange={(e) => setNotifyBeforeExpiry(e.target.checked)}
+                        className="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700 focus:ring-emerald-500"
+                      />
+                      <span>7 Tage vor Ablauf per E-Mail benachrichtigen</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               <div className="pt-2">
-                {authenticated ? (
-                  <button type="submit" disabled={isUploading} className="btn-primary w-full py-3">
-                    {isUploading ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <QrCode size={18} />
-                        <span>Dokument hochladen & Codes generieren</span>
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <button type="button" onClick={onOpenLogin} className="btn-secondary w-full py-3 text-amber-300">
-                    <ShieldCheck size={18} />
-                    <span>Bitte melde dich an, um Dokumente hochzuladen</span>
-                  </button>
-                )}
+                <button type="submit" disabled={isUploading} className="btn-primary w-full py-3">
+                  {isUploading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <QrCode size={18} />
+                      <span>Dokument hochladen & Codes generieren</span>
+                    </>
+                  )}
+                </button>
               </div>
             </form>
           </div>

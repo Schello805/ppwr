@@ -62,22 +62,16 @@ export default function Home() {
         <Header
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          authenticated={authenticated}
           username={username}
-          onOpenLogin={() => {}}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onLogout={handleLogout}
         />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {activeTab === 'upload' ? (
-            <UploadTab
-              authenticated={authenticated}
-              onOpenLogin={() => {}}
-              onSuccessUpload={() => {}}
-            />
+            <UploadTab />
           ) : (
-            <ArchiveTab authenticated={authenticated} onOpenLogin={() => {}} />
+            <ArchiveTab />
           )}
         </main>
       </div>

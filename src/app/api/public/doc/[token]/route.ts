@@ -27,10 +27,35 @@ export async function GET(req: NextRequest, { params }: { params: { token: strin
       },
     });
 
+    // Check if document is expired
+    const isExpired = document.validUntil ? new Date(document.validUntil) < new Date() : false;
+
+    if (isExpired) {
+      const settings = await prisma.setting.findMany();
+      const settingsMap: Record<string, string> = {};
+      settings.forEach((s) => (settingsMap[s.key] = s.value));
+
+      return NextResponse.json({
+        isExpired: true,
+        sku: document.sku,
+        title: document.title,
+        validUntil: document.validUntil,
+        contactInfo: {
+          company: settingsMap.contact_company || '',
+          email: settingsMap.contact_email || '',
+          phone: settingsMap.contact_phone || '',
+          website: settingsMap.contact_website || '',
+        },
+      });
+    }
+
     return NextResponse.json({
+      isExpired: false,
       sku: document.sku,
       title: document.title,
       category: document.category,
+      language: document.language,
+      validUntil: document.validUntil,
       latestRevision: document.revisions[0],
       revisionsHistory: document.revisions.map((r) => ({
         revisionNumber: r.revisionNumber,

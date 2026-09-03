@@ -13,6 +13,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Forgot Password modal state
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
+  const [forgotUser, setForgotUser] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMsg, setForgotMsg] = useState('');
+  const [forgotErr, setForgotErr] = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -35,6 +42,32 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       setError('Verbindungsfehler zum Server');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    setForgotErr('');
+    setForgotMsg('');
+
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: forgotUser }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setForgotErr(data.error || 'Fehler beim Anfordern des Reset-Links');
+      } else {
+        setForgotMsg(data.message);
+      }
+    } catch {
+      setForgotErr('Verbindungsfehler');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -93,19 +126,29 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Passwort</label>
-              <div className="flex items-center gap-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3.5 h-11 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
-                <Key size={18} className="text-slate-400 shrink-0" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none w-full text-xs"
-                />
-              </div>
+            <div className="flex items-center justify-between pt-1">
+              <label className="block text-xs font-medium text-slate-300">Passwort</label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotOpen(true);
+                  setForgotUser(username || 'admin');
+                }}
+                className="text-[11px] text-emerald-400 hover:underline"
+              >
+                Passwort vergessen?
+              </button>
+            </div>
+            <div className="flex items-center gap-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3.5 h-11 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+              <Key size={18} className="text-slate-400 shrink-0" />
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none w-full text-xs"
+              />
             </div>
 
             <div className="pt-2">
@@ -129,6 +172,68 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {isForgotOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="glass-panel w-full max-w-md rounded-2xl p-6 relative space-y-4 border border-slate-800">
+            <button
+              onClick={() => setIsForgotOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1"
+            >
+              ✕
+            </button>
+
+            <h3 className="text-lg font-bold text-white">Passwort zurücksetzen</h3>
+            <p className="text-xs text-slate-400">
+              Gib deinen Benutzernamen ein. Es wird eine E-Mail mit einem Reset-Link an die konfigurierte Support-Adresse gesendet.
+            </p>
+
+            {forgotErr && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+                {forgotErr}
+              </div>
+            )}
+
+            {forgotMsg && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
+                {forgotMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleForgotSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">Benutzername</label>
+                <input
+                  type="text"
+                  required
+                  value={forgotUser}
+                  onChange={(e) => setForgotUser(e.target.value)}
+                  placeholder="admin"
+                  className="input-field w-full text-xs"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsForgotOpen(false)}
+                  className="btn-secondary text-xs"
+                >
+                  Schließen
+                </button>
+                <button type="submit" disabled={forgotLoading} className="btn-primary text-xs">
+                  {forgotLoading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <span>Reset-Link anfordern</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="max-w-7xl mx-auto w-full text-center text-[11px] text-slate-600 py-2">

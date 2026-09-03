@@ -17,16 +17,19 @@ model User {
 }
 
 model Document {
-  id            String             @id @default(uuid())
-  sku           String
-  title         String
-  category      String             // "Konformitätserklärung", "Anleitung", "Datenblatt", etc.
-  language      String             @default("DE") // "DE", "EN", "FR", "IT", "ES", "MULTI"
-  publicToken   String             @unique @default(uuid())
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  revisions     DocumentRevision[]
-  auditLogs     AuditLog[]
+  id                 String             @id @default(uuid())
+  sku                String
+  title              String
+  category           String             // "Konformitätserklärung", "Anleitung", "Datenblatt", etc.
+  language           String             @default("DE") // "DE", "EN", "FR", "IT", "ES", "MULTI"
+  publicToken        String             @unique @default(uuid())
+  validUntil         DateTime?
+  notifyBeforeExpiry Boolean            @default(true)
+  expiryNotified     Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  revisions          DocumentRevision[]
+  auditLogs          AuditLog[]
 }
 
 model DocumentRevision {
@@ -61,4 +64,12 @@ model Setting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  username  String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }

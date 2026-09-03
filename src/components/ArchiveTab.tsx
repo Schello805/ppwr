@@ -14,7 +14,6 @@ import {
   Eye,
   AlertCircle,
   X,
-  Lock,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -47,15 +46,10 @@ export interface DocumentData {
   revisions: RevisionData[];
 }
 
-interface ArchiveTabProps {
-  authenticated: boolean;
-  onOpenLogin: () => void;
-}
-
 type SortField = 'sku' | 'title' | 'category' | 'language' | 'revision' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
 
-export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabProps) {
+export default function ArchiveTab() {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -140,7 +134,7 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
   useEffect(() => {
     fetchDocuments();
     fetchCategories();
-  }, [authenticated]);
+  }, []);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -308,19 +302,8 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
         </div>
       </div>
 
-      {!authenticated && (
-        <div className="glass-panel p-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between gap-4 text-amber-200 text-sm">
-          <div className="flex items-center gap-3">
-            <Lock size={20} className="shrink-0" />
-            <span>Du bist derzeit nicht angemeldet. Bitte melde dich an, um Zugriff auf das Archiv zu erhalten.</span>
-          </div>
-          <button onClick={onOpenLogin} className="btn-primary text-xs py-2 px-4 shrink-0">
-            Admin Login
-          </button>
-        </div>
-      )}
 
-      {error && authenticated && (
+      {error && (
         <div className="glass-panel p-4 rounded-xl border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
           <AlertCircle size={18} />
           <span>{error}</span>
@@ -328,9 +311,8 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
       )}
 
       {/* Table */}
-      {authenticated && (
-        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
-          <div className="overflow-x-auto">
+      <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+        <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-slate-300">
               <thead className="bg-slate-900/90 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
                 <tr>
@@ -509,9 +491,8 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
                 )}
               </tbody>
             </table>
-          </div>
         </div>
-      )}
+      </div>
 
       {/* Revision History Modal */}
       {historyDoc && (
