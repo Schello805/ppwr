@@ -19,6 +19,8 @@ import {
   ArrowUp,
   ArrowDown,
   Globe,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { GeneratedCodes } from '@/lib/barcode';
 
@@ -70,6 +72,8 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
   const [historyDoc, setHistoryDoc] = useState<DocumentData | null>(null);
   const [codeDoc, setCodeDoc] = useState<{ doc: DocumentData; codes: GeneratedCodes; publicUrl: string } | null>(null);
   const [newRevDoc, setNewRevDoc] = useState<DocumentData | null>(null);
+  const [deleteDoc, setDeleteDoc] = useState<DocumentData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // New revision form state
   const [revFile, setRevFile] = useState<File | null>(null);
@@ -78,6 +82,27 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
   const [revError, setRevError] = useState('');
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteDoc) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/documents/${deleteDoc.id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setDeleteDoc(null);
+        fetchDocuments();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Fehler beim Löschen');
+      }
+    } catch {
+      alert('Netzwerkfehler beim Löschen');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -467,6 +492,15 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
                             >
                               {copiedId === doc.id ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                             </button>
+
+                            {/* Delete Document */}
+                            <button
+                              onClick={() => setDeleteDoc(doc)}
+                              className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
+                              title="Dokument löschen"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -681,6 +715,60 @@ export default function ArchiveTab({ authenticated, onOpenLogin }: ArchiveTabPro
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="glass-panel w-full max-w-md rounded-2xl p-6 relative space-y-5 border border-red-500/30">
+            <button
+              onClick={() => setDeleteDoc(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Dokument wirklich löschen?</h3>
+                <p className="text-xs text-slate-400 font-mono">SKU: {deleteDoc.sku}</p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-300 space-y-1">
+              <p className="font-semibold">Achtung: Dies löscht das Dokument "{deleteDoc.title}" und alle zugehörigen Revisionsdateien unwiderruflich!</p>
+              <p className="text-slate-400">Verpackungscodes auf gedruckten Schachteln führen danach ins Leere.</p>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteDoc(null)}
+                className="btn-secondary text-xs"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-500 text-white font-medium px-4 py-2.5 rounded-lg text-xs transition-colors flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    <span>Unwiderruflich löschen</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
