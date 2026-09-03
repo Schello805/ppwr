@@ -1,0 +1,29 @@
+# dependencies
+/node_modules
+/.pnpm
+/.yarn
+
+# next.js build
+/.next/
+/out/
+
+# production & temp files
+/build
+*.log
+
+# database & uploads
+prisma/*.db
+prisma/*.db-journal
+/data
+/uploads/*
+!/uploads/.gitkeep
+
+# environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE & OS files
+.DS_Store
+*.pem

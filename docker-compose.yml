@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  ppwr-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ppwr-manager
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/ppwr.db
+      - NEXT_PUBLIC_BASE_URL=http://localhost:3000
+      - JWT_SECRET=ppwr-super-secret-production-key-2026
+      - ADMIN_INITIAL_USER=admin
+      - ADMIN_INITIAL_PASSWORD=password123
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
