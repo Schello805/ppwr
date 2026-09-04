@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileCheck, QrCode, Download, Copy, Check, ShieldCheck, AlertCircle, RefreshCw, Barcode, Eye, Globe } from 'lucide-react';
+import { UploadCloud, FileCheck, QrCode, Download, Copy, Check, ShieldCheck, AlertCircle, RefreshCw, Eye, Globe, Clock } from 'lucide-react';
 import { GeneratedCodes } from '@/lib/barcode';
 import Tooltip from './Tooltip';
-
-
 
 const LANGUAGES = [
   { code: 'DE', label: 'Deutsch 🇩🇪' },
@@ -22,6 +20,7 @@ export default function UploadTab() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Konformitätserklärung');
   const [language, setLanguage] = useState('DE');
+  const [packagingType, setPackagingType] = useState<'single_use' | 'reusable' | 'custom'>('single_use');
   const [validUntil, setValidUntil] = useState('');
   const [notifyBeforeExpiry, setNotifyBeforeExpiry] = useState(true);
   const [comment, setComment] = useState('Erstupload v1 (PPWR Konformität)');
@@ -43,6 +42,24 @@ export default function UploadTab() {
 
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Compute and set initial 5-year retention period (Einwegverpackung)
+  useEffect(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 5);
+    setValidUntil(d.toISOString().split('T')[0]);
+  }, []);
+
+  const handleSelectPackagingType = (type: 'single_use' | 'reusable') => {
+    setPackagingType(type);
+    const d = new Date();
+    if (type === 'single_use') {
+      d.setFullYear(d.getFullYear() + 5);
+    } else {
+      d.setFullYear(d.getFullYear() + 10);
+    }
+    setValidUntil(d.toISOString().split('T')[0]);
+  };
 
   useEffect(() => {
     async function loadCategories() {
@@ -169,7 +186,7 @@ export default function UploadTab() {
               Revisionsgesicherte Dokumentenverknüpfung (PPWR)
             </h2>
             <p className="text-sm text-slate-300">
-              Lade deine PPWR-Konformitätserklärung, Anleitung oder dein Datenblatt hoch. Die Anwendung generiert automatisch einen **QR-Code**, einen **DataMatrix-Code (GS1)** und einen **Code 128** zum Vektor-Druck auf Verpackungen.
+              Lade deine PPWR-Konformitätserklärung, Anleitung oder dein Datenblatt hoch. Die Anwendung generiert automatisch einen **QR-Code** und einen **DataMatrix-Code** zum Vektor-Druck auf Verpackungen.
             </p>
           </div>
         </div>
@@ -234,6 +251,15 @@ export default function UploadTab() {
                       <p className="text-xs text-slate-500">PDFs bis 50 MB (Konformitätserklärung, Anleitung, Datenblatt)</p>
                     </div>
                   )}
+                </div>
+
+                {/* Subtle PPWR Compliance Notice (Consumer Sorting & Material Identification) */}
+                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-2.5 text-xs text-slate-400">
+                  <ShieldCheck size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-slate-200">PPWR-Hinweis (Art. 11/14): </span>
+                    Dokumente sollten die erforderlichen Materialkennzeichnungen (z. B. PAP 20, PP 05, PET 01) sowie klare Verbraucher-Trennhinweise zur ordnungsgemäßen Mülltrennung enthalten.
+                  </div>
                 </div>
               </div>
 
@@ -322,24 +348,79 @@ export default function UploadTab() {
                 />
               </div>
 
-              {/* Expiry Date & 7-Day Notification */}
+              {/* Packaging Type & PPWR Retention Period (Art. 13) */}
               <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col justify-end">
-                    <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center h-5">
-                      <span>Gültig bis (optional)</span>
-                      <Tooltip content="Optionales Ablaufdatum des Compliance-Dokuments. Nach Ablauf zeigt die öffentliche Verpackungs-Seite eine Kontakt-Hinweisseite an." />
-                    </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock size={14} className="text-emerald-400" />
+                    <span>Verpackungsart & Aufbewahrungsfrist (PPWR Art. 13)</span>
+                  </label>
+                  <Tooltip content="Art. 13 Abs. 3 PPWR fordert eine Mindestaufbewahrung ab Inverkehrbringen: 5 Jahre für Einwegverpackungen, 10 Jahre für Mehrwegverpackungen. Du kannst das Datum bei Bedarf manuell anpassen." />
+                </div>
+
+                {/* Packaging Type Selector Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPackagingType('single_use')}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      packagingType === 'single_use'
+                        ? 'bg-emerald-950/50 border-emerald-500 text-white shadow-md'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-200">Einwegverpackung</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-mono font-semibold">
+                        5 Jahre
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">Single-Use (gesetzlich min. 5 Jahre)</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPackagingType('reusable')}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      packagingType === 'reusable'
+                        ? 'bg-sky-950/50 border-sky-500 text-white shadow-md'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-200">Mehrwegverpackung</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-mono font-semibold">
+                        10 Jahre
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">Reusable (gesetzlich min. 10 Jahre)</p>
+                  </button>
+                </div>
+
+                {/* Date Picker & Notification Checkbox */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-400">Ablaufdatum:</span>
+                      {packagingType !== 'custom' && (
+                        <span className="text-[10px] text-emerald-400 font-mono">
+                          {packagingType === 'single_use' ? '+5 Jahre aktiv' : '+10 Jahre aktiv'}
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="date"
                       value={validUntil}
-                      onChange={(e) => setValidUntil(e.target.value)}
+                      onChange={(e) => {
+                        setValidUntil(e.target.value);
+                        setPackagingType('custom');
+                      }}
                       className="input-field w-full text-xs text-slate-200"
                     />
                   </div>
 
-                  <div className="flex flex-col justify-end">
-                    <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-300 h-11">
+                  <div className="flex items-end">
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-300 h-10">
                       <input
                         type="checkbox"
                         checked={notifyBeforeExpiry}
@@ -441,12 +522,12 @@ export default function UploadTab() {
                   </div>
                 </div>
 
-                {/* DataMatrix Code (128/GS1) */}
+                {/* DataMatrix 2D-Code (ISO/IEC 16022) */}
                 <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col items-center justify-between text-center space-y-3">
                   <div>
                     <h4 className="text-xs font-semibold text-slate-300 flex items-center justify-center gap-1.5">
-                      <Barcode size={14} className="text-sky-400" />
-                      DataMatrix Code (128/GS1)
+                      <QrCode size={14} className="text-sky-400" />
+                      DataMatrix 2D-Code (ISO/IEC 16022)
                     </h4>
                   </div>
                   <div className="p-2 bg-white rounded-xl shadow-inner my-2 flex items-center justify-center min-h-[136px]">
@@ -468,31 +549,6 @@ export default function UploadTab() {
                   </div>
                 </div>
               </div>
-
-              {/* Code 128 Barcode */}
-              <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col items-center justify-between text-center space-y-3">
-                <h4 className="text-xs font-semibold text-slate-300 flex items-center justify-center gap-1.5">
-                  <Barcode size={14} className="text-amber-400" />
-                  Code 128 Strichcode (Artikel-SKU)
-                </h4>
-                <div className="p-3 bg-white rounded-xl shadow-inner my-1 w-full flex justify-center">
-                  <img src={successResult.codes.code128Png} alt="Code 128 Barcode" className="max-h-20 object-contain" />
-                </div>
-                <div className="flex items-center gap-2 w-full max-w-xs">
-                  <button
-                    onClick={() => downloadFile(successResult.codes.code128Png, `Code128_${successResult.sku}.png`, false)}
-                    className="btn-secondary w-full text-xs py-1.5"
-                  >
-                    <Download size={13} /> PNG
-                  </button>
-                  <button
-                    onClick={() => downloadFile(successResult.codes.code128Svg, `Code128_${successResult.sku}.svg`, true)}
-                    className="btn-secondary w-full text-xs py-1.5 text-amber-400"
-                  >
-                    <Download size={13} /> SVG
-                  </button>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center flex flex-col items-center justify-center min-h-[460px] space-y-4">
@@ -502,7 +558,7 @@ export default function UploadTab() {
               <div className="max-w-md space-y-1">
                 <h4 className="text-base font-semibold text-slate-200">Vorschau der generierten Codes</h4>
                 <p className="text-xs text-slate-400">
-                  Sobald du links ein PDF hochlädst, erhältst du hier deinen druckfähigen QR-Code, DataMatrix-Code und Code 128 Strichcode für deine Verpackungen.
+                  Sobald du links ein PDF hochlädst, erhältst du hier deinen druckfähigen QR-Code und DataMatrix-Code für deine Verpackungen.
                 </p>
               </div>
             </div>

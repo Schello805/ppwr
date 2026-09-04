@@ -81,7 +81,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="w-full border-t border-slate-800/80 py-6 mt-12 bg-slate-950/80">
         <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 PPWR Compliance Manager • Revisionsgesicherte Verpackungscodes (QR / DataMatrix / Code 128)</p>
+          <p>© 2026 PPWR Compliance Manager • Revisionsgesicherte Verpackungscodes (QR / DataMatrix)</p>
           <p className="font-mono text-slate-600">Ubuntu Linux ready • SHA-256 Audit Trail</p>
         </div>
       </footer>

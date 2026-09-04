@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'PPWR Compliance Manager - Revisionsgesicherte Dokumente & Verpackungscodes',
   description:
-    'Webapplikation zur Erstellung und Verwaltung von PPWR-Konformitätserklärungen, Anleitungen und Datenblättern mit QR-Code und DataMatrix-Code (Code 128) Erzeugung.',
+    'Webapplikation zur Erstellung und Verwaltung von PPWR-Konformitätserklärungen, Anleitungen und Datenblättern mit QR-Code und DataMatrix-Code Erzeugung.',
 };
 
 export default function RootLayout({

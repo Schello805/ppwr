@@ -31,7 +31,7 @@ export default function Header({
                 Revisionsgesichert
               </span>
             </div>
-            <p className="text-xs text-slate-400">PDF-Upload, QR & DataMatrix (Code 128) für Verpackungen</p>
+            <p className="text-xs text-slate-400">PDF-Upload, QR-Code & DataMatrix für Verpackungen</p>
           </div>
         </div>
 
