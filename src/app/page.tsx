@@ -5,13 +5,12 @@ import Header from '@/components/Header';
 import UploadTab from '@/components/UploadTab';
 import ArchiveTab from '@/components/ArchiveTab';
 import LoginScreen from '@/components/LoginScreen';
-import SettingsModal from '@/components/SettingsModal';
+import SettingsView from '@/components/SettingsView';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'upload' | 'archive'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'archive' | 'settings'>('upload');
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [username, setUsername] = useState<string | undefined>(undefined);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const checkAuth = async () => {
@@ -63,15 +62,18 @@ export default function Home() {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           username={username}
-          onOpenSettings={() => setIsSettingsOpen(true)}
           onLogout={handleLogout}
         />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {activeTab === 'upload' ? (
-            <UploadTab />
-          ) : (
-            <ArchiveTab />
+          {activeTab === 'upload' && <UploadTab />}
+          {activeTab === 'archive' && <ArchiveTab />}
+          {activeTab === 'settings' && (
+            <SettingsView
+              onSettingsUpdated={() => {
+                setRefreshKey((k) => k + 1);
+              }}
+            />
           )}
         </main>
       </div>
@@ -83,15 +85,6 @@ export default function Home() {
           <p className="font-mono text-slate-600">Ubuntu Linux ready • SHA-256 Audit Trail</p>
         </div>
       </footer>
-
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onSettingsUpdated={() => {
-          setRefreshKey((k) => k + 1);
-        }}
-      />
     </div>
   );
 }

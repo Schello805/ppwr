@@ -3,10 +3,9 @@
 import { QrCode, FileText, ShieldCheck, LogOut, User as UserIcon, Package, Settings } from 'lucide-react';
 
 interface HeaderProps {
-  activeTab: 'upload' | 'archive';
-  setActiveTab: (tab: 'upload' | 'archive') => void;
+  activeTab: 'upload' | 'archive' | 'settings';
+  setActiveTab: (tab: 'upload' | 'archive' | 'settings') => void;
   username?: string;
-  onOpenSettings: () => void;
   onLogout: () => void;
 }
 
@@ -14,7 +13,6 @@ export default function Header({
   activeTab,
   setActiveTab,
   username,
-  onOpenSettings,
   onLogout,
 }: HeaderProps) {
   return (
@@ -62,14 +60,30 @@ export default function Header({
             <FileText size={18} />
             <span>2. Dokumenten-Archiv</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'settings'
+                ? 'bg-emerald-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Settings size={18} />
+            <span>3. Einstellungen</span>
+          </button>
         </div>
 
-        {/* User section — always shown (app is behind login) */}
+        {/* User section */}
         <div className="flex items-center gap-3">
           <button
-            onClick={onOpenSettings}
-            className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 text-slate-300 hover:text-emerald-400"
-            title="Einstellungen (Domain, Kontakt, SMTP)"
+            onClick={() => setActiveTab('settings')}
+            className={`btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 transition-colors ${
+              activeTab === 'settings'
+                ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/40'
+                : 'text-slate-300 hover:text-emerald-400'
+            }`}
+            title="System-Einstellungen (Domain, Kontakt, SMTP, CRON)"
           >
             <Settings size={15} />
             <span className="hidden sm:inline">Einstellungen</span>

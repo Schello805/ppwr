@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { sendTestEmail } from '@/lib/email';
 
+import crypto from 'crypto';
+
 const DEFAULT_CATEGORIES = [
   'Konformitätserklärung',
   'Anleitung',
@@ -23,6 +25,16 @@ export async function GET() {
       ? JSON.parse(settingsMap.categories)
       : DEFAULT_CATEGORIES;
 
+    let cronSecret = settingsMap.cron_secret;
+    if (!cronSecret) {
+      cronSecret = crypto.randomBytes(24).toString('hex');
+      await prisma.setting.upsert({
+        where: { key: 'cron_secret' },
+        update: { value: cronSecret },
+        create: { key: 'cron_secret', value: cronSecret },
+      });
+    }
+
     return NextResponse.json({
       customDomain: settingsMap.custom_domain || '',
       categories,
@@ -36,6 +48,7 @@ export async function GET() {
       smtpPass: settingsMap.smtp_pass ? '••••••••' : '',
       smtpFrom: settingsMap.smtp_from || '',
       smtpSecure: settingsMap.smtp_secure === 'true',
+      cronSecret,
     });
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -51,6 +64,17 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    // Handle Regenerate Cron Secret Trigger
+    if (body.action === 'regenerate_cron_secret') {
+      const newSecret = crypto.randomBytes(24).toString('hex');
+      await prisma.setting.upsert({
+        where: { key: 'cron_secret' },
+        update: { value: newSecret },
+        create: { key: 'cron_secret', value: newSecret },
+      });
+      return NextResponse.json({ success: true, cronSecret: newSecret });
+    }
 
     // Handle SMTP Test Email Trigger
     if (body.action === 'test_smtp') {
@@ -75,6 +99,7 @@ export async function POST(req: NextRequest) {
       smtpPass,
       smtpFrom,
       smtpSecure,
+      cronSecret,
     } = body;
 
     const upsertSetting = async (key: string, value: string) => {
@@ -99,6 +124,7 @@ export async function POST(req: NextRequest) {
     if (smtpPass !== undefined && smtpPass !== '••••••••') await upsertSetting('smtp_pass', smtpPass);
     if (smtpFrom !== undefined) await upsertSetting('smtp_from', smtpFrom.trim());
     if (smtpSecure !== undefined) await upsertSetting('smtp_secure', smtpSecure ? 'true' : 'false');
+    if (cronSecret !== undefined && cronSecret.trim()) await upsertSetting('cron_secret', cronSecret.trim());
 
     return NextResponse.json({ success: true, message: 'Einstellungen erfolgreich gespeichert!' });
   } catch (error) {

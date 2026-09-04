@@ -1,12 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendExpiryNotification } from '@/lib/email';
+import { getCurrentUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
     const settings = await prisma.setting.findMany();
     const map: Record<string, string> = {};
     settings.forEach((s) => (map[s.key] = s.value));
+
+    // Security Check: Token or active admin session
+    const configuredSecret = map.cron_secret || process.env.CRON_SECRET;
+    const authHeader = req.headers.get('authorization');
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
+    const queryToken = req.nextUrl.searchParams.get('token');
+    const providedToken = bearerToken || queryToken;
+
+    const currentUser = getCurrentUser();
+    const isAuthorizedByToken = configuredSecret && providedToken === configuredSecret;
+    const isAuthorizedBySession = !!currentUser;
+
+    if (!isAuthorizedByToken && !isAuthorizedBySession) {
+      return NextResponse.json(
+        { error: 'Nicht autorisiert: Ungültiger oder fehlender Cron-Sicherheitstoken.' },
+        { status: 401 }
+      );
+    }
 
     const adminEmail = map.contact_email || map.smtp_user;
     if (!adminEmail) {

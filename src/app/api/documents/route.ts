@@ -28,6 +28,9 @@ export async function GET(req: NextRequest) {
         revisions: {
           orderBy: { revisionNumber: 'desc' },
         },
+        auditLogs: {
+          orderBy: { createdAt: 'desc' },
+        },
       },
       orderBy: { updatedAt: 'desc' },
     });

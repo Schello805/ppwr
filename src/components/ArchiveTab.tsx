@@ -34,6 +34,16 @@ export interface RevisionData {
   createdAt: string;
 }
 
+export interface AuditLogData {
+  id: string;
+  documentId?: string | null;
+  action: string;
+  details: string;
+  user?: string | null;
+  ipAddress?: string | null;
+  createdAt: string;
+}
+
 export interface DocumentData {
   id: string;
   sku: string;
@@ -41,9 +51,13 @@ export interface DocumentData {
   category: string;
   language: string;
   publicToken: string;
+  validUntil?: string | null;
+  notifyBeforeExpiry?: boolean;
+  expiryNotified?: boolean;
   createdAt: string;
   updatedAt: string;
   revisions: RevisionData[];
+  auditLogs?: AuditLogData[];
 }
 
 type SortField = 'sku' | 'title' | 'category' | 'language' | 'revision' | 'updatedAt';
@@ -64,6 +78,8 @@ export default function ArchiveTab() {
 
   // Modals state
   const [historyDoc, setHistoryDoc] = useState<DocumentData | null>(null);
+  const [historyTab, setHistoryTab] = useState<'revisions' | 'audit'>('revisions');
+  const [copiedHash, setCopiedHash] = useState<string | null>(null);
   const [codeDoc, setCodeDoc] = useState<{ doc: DocumentData; codes: GeneratedCodes; publicUrl: string } | null>(null);
   const [newRevDoc, setNewRevDoc] = useState<DocumentData | null>(null);
   const [deleteDoc, setDeleteDoc] = useState<DocumentData | null>(null);
@@ -403,7 +419,20 @@ export default function ArchiveTab() {
                           <span className="badge-amber font-mono">{doc.language || 'DE'}</span>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <span className="badge-green font-bold">v{latestRev?.revisionNumber || 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHistoryDoc(doc);
+                              setHistoryTab('revisions');
+                            }}
+                            className="badge-green font-bold hover:brightness-110 transition-all cursor-pointer inline-flex items-center gap-1"
+                            title="Klicken für Revisionsstufen & Audit-Trail"
+                          >
+                            <span>v{latestRev?.revisionNumber || 1}</span>
+                            {doc.revisions.length > 1 && (
+                              <span className="text-[10px] opacity-75 font-normal">({doc.revisions.length})</span>
+                            )}
+                          </button>
                         </td>
                         <td className="px-6 py-4 font-mono text-xs text-slate-400">
                           {latestRev?.sha256Hash ? (
@@ -459,7 +488,10 @@ export default function ArchiveTab() {
 
                             {/* Revision History */}
                             <button
-                              onClick={() => setHistoryDoc(doc)}
+                              onClick={() => {
+                                setHistoryDoc(doc);
+                                setHistoryTab('revisions');
+                              }}
                               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
                               title="Revisionshistorie & Audit-Log"
                             >
@@ -494,62 +526,210 @@ export default function ArchiveTab() {
         </div>
       </div>
 
-      {/* Revision History Modal */}
+      {/* Revision History & Compliance Audit-Trail Modal */}
       {historyDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="glass-panel w-full max-w-2xl rounded-2xl p-6 relative space-y-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="glass-panel w-full max-w-4xl rounded-2xl p-6 sm:p-8 relative space-y-6 max-h-[90vh] flex flex-col border border-slate-700/80 shadow-2xl">
             <button
               onClick={() => setHistoryDoc(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1"
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+              title="Schließen"
             >
               <X size={20} />
             </button>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <History size={20} />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">Revisionshistorie</h3>
-                <p className="text-xs text-slate-400 font-mono">
-                  {historyDoc.title} • SKU: {historyDoc.sku}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-              {historyDoc.revisions.map((rev) => (
-                <div
-                  key={rev.id}
-                  className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 relative hover:border-slate-700 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="badge-green font-bold">Revisionsstufe v{rev.revisionNumber}</span>
-                      <span className="text-sm font-medium text-slate-200">{rev.fileName}</span>
-                    </div>
-                    <a
-                      href={`/api/public/file/${rev.id}?download=true`}
-                      className="btn-secondary text-xs py-1 px-3"
-                    >
-                      <Download size={13} /> PDF Herunterladen
-                    </a>
-                  </div>
-
-                  <p className="text-xs text-slate-400">{rev.comment || 'Keine Revisionsnotiz'}</p>
-
-                  <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2">
-                    <span className="font-mono text-emerald-400 flex items-center gap-1">
-                      <ShieldCheck size={14} /> SHA-256: {rev.sha256Hash}
-                    </span>
-                    <span>
-                      Hochgeladen von <strong className="text-slate-300">{rev.uploadedBy}</strong> am{' '}
-                      {new Date(rev.createdAt).toLocaleString('de-DE')}
-                    </span>
-                  </div>
+            {/* Modal Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-900/40 shrink-0">
+                  <ShieldCheck size={24} />
                 </div>
-              ))}
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xl font-bold text-white">{historyDoc.title}</h3>
+                    <span className="badge-green text-xs font-mono">SKU: {historyDoc.sku}</span>
+                    <span className="badge-blue text-xs">{historyDoc.category}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-mono">
+                      {historyDoc.language}
+                    </span>
+                    {historyDoc.validUntil && (
+                      <span className={`text-xs px-2 py-0.5 rounded-md font-mono ${
+                        new Date(historyDoc.validUntil) < new Date()
+                          ? 'bg-red-900/50 text-red-300 border border-red-500/50'
+                          : 'bg-emerald-900/30 text-emerald-300 border border-emerald-500/30'
+                      }`}>
+                        Gültig bis: {new Date(historyDoc.validUntil).toLocaleDateString('de-DE')}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Revisionshistorie & Unveränderlicher Audit-Trail (EU-PPWR Richtlinienkonform)
+                  </p>
+                </div>
+              </div>
             </div>
+
+            {/* Subnavigation Tabs in Modal */}
+            <div className="flex bg-slate-900/90 p-1 rounded-xl border border-slate-800 shrink-0">
+              <button
+                type="button"
+                onClick={() => setHistoryTab('revisions')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                  historyTab === 'revisions'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <History size={16} />
+                <span>Revisionsstufen ({historyDoc.revisions.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHistoryTab('audit')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                  historyTab === 'audit'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <ShieldCheck size={16} />
+                <span>Compliance Audit-Trail ({historyDoc.auditLogs?.length || 0})</span>
+              </button>
+            </div>
+
+            {/* Modal Body: Revisions Tab */}
+            {historyTab === 'revisions' && (
+              <div className="space-y-4 overflow-y-auto pr-1 flex-1">
+                {historyDoc.revisions.map((rev, index) => {
+                  const isLatest = index === 0;
+                  const fileSizeFormatted =
+                    rev.fileSize > 1024 * 1024
+                      ? (rev.fileSize / (1024 * 1024)).toFixed(2) + ' MB'
+                      : (rev.fileSize / 1024).toFixed(1) + ' KB';
+
+                  return (
+                    <div
+                      key={rev.id}
+                      className={`p-5 rounded-xl border space-y-3 transition-colors ${
+                        isLatest
+                          ? 'bg-slate-900/95 border-emerald-500/50 shadow-lg shadow-emerald-950/20'
+                          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className={`font-bold text-xs px-2.5 py-1 rounded-lg ${
+                              isLatest
+                                ? 'bg-emerald-500 text-slate-950'
+                                : 'bg-slate-800 text-slate-300'
+                            }`}
+                          >
+                            v{rev.revisionNumber} {isLatest ? '• Aktuelle Version' : '• Archiviert'}
+                          </span>
+                          <span className="text-sm font-semibold text-white truncate max-w-xs sm:max-w-md">
+                            {rev.fileName}
+                          </span>
+                          <span className="text-xs text-slate-400 font-mono">({fileSizeFormatted})</span>
+                        </div>
+
+                        <a
+                          href={`/api/public/file/${rev.id}?download=true`}
+                          className="btn-secondary text-xs py-1.5 px-3 flex items-center justify-center gap-1.5 self-start sm:self-auto shrink-0"
+                        >
+                          <Download size={13} /> PDF Herunterladen
+                        </a>
+                      </div>
+
+                      <p className="text-xs text-slate-300 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/80">
+                        <strong className="text-slate-400">Revisionskommentar:</strong>{' '}
+                        {rev.comment || 'Keine Revisionsnotiz angegeben'}
+                      </p>
+
+                      <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 gap-2">
+                        <div className="flex items-center gap-2 overflow-x-auto">
+                          <span className="font-mono text-emerald-400 flex items-center gap-1 shrink-0">
+                            <ShieldCheck size={14} /> SHA-256:
+                          </span>
+                          <span className="font-mono text-slate-300 truncate max-w-[200px] sm:max-w-xs">
+                            {rev.sha256Hash}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(rev.sha256Hash);
+                              setCopiedHash(rev.sha256Hash);
+                              setTimeout(() => setCopiedHash(null), 2500);
+                            }}
+                            className="text-slate-400 hover:text-emerald-400 p-1 rounded transition-colors shrink-0"
+                            title="Prüfsumme kopieren"
+                          >
+                            {copiedHash === rev.sha256Hash ? (
+                              <Check size={13} className="text-emerald-400" />
+                            ) : (
+                              <Copy size={13} />
+                            )}
+                          </button>
+                        </div>
+
+                        <div className="text-slate-400 shrink-0">
+                          Hochgeladen von <strong className="text-slate-200">{rev.uploadedBy}</strong> am{' '}
+                          {new Date(rev.createdAt).toLocaleString('de-DE')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Modal Body: Audit-Trail Tab */}
+            {historyTab === 'audit' && (
+              <div className="space-y-4 overflow-y-auto pr-1 flex-1">
+                {(!historyDoc.auditLogs || historyDoc.auditLogs.length === 0) ? (
+                  <div className="text-center py-12 text-slate-400 text-sm">
+                    Keine Audit-Einträge für dieses Dokument gefunden.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {historyDoc.auditLogs.map((log) => (
+                      <div
+                        key={log.id}
+                        className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2 text-xs hover:border-slate-700 transition-colors"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 font-mono font-semibold">
+                              {log.action}
+                            </span>
+                            <span className="text-slate-300 font-medium">
+                              Benutzer: <strong className="text-white">{log.user || 'Admin'}</strong>
+                            </span>
+                            {log.ipAddress && (
+                              <span className="text-slate-500 font-mono">({log.ipAddress})</span>
+                            )}
+                          </div>
+                          <span className="text-slate-400 font-mono">
+                            {new Date(log.createdAt).toLocaleString('de-DE')}
+                          </span>
+                        </div>
+                        <p className="text-slate-300 bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80 font-mono">
+                          {log.details}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-800/40 text-xs text-slate-300 flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
+                  <span>
+                    Unveränderliches Prüfprotokoll gemäß Art. 11/14 EU-PPWR Richtlinie für lückenlose Rückverfolgbarkeit.
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
