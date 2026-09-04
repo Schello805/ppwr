@@ -7,11 +7,14 @@ RUN apk add --no-libc6-compat openssl
 WORKDIR /app
 
 # Step 2: Dependencies
+FROM base AS deps
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 RUN npm ci
 
 # Step 3: Build
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
@@ -34,7 +37,7 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/.env.example ./.env
 
-RUN mkdir -p /app/uploads /app/prisma
+RUN mkdir -p /app/uploads /app/data
 
 EXPOSE 3000
 
