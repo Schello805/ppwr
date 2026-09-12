@@ -67,7 +67,9 @@ export default function Home() {
 
         <main className="w-[92%] max-w-[2000px] mx-auto py-8">
           {activeTab === 'upload' && <UploadTab />}
-          {activeTab === 'archive' && <ArchiveTab />}
+          {activeTab === 'archive' && (
+            <ArchiveTab onNavigateToUpload={() => setActiveTab('upload')} />
+          )}
           {activeTab === 'settings' && (
             <SettingsView
               onSettingsUpdated={() => {

@@ -63,7 +63,11 @@ export interface DocumentData {
 type SortField = 'sku' | 'title' | 'category' | 'language' | 'revision' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
 
-export default function ArchiveTab() {
+interface ArchiveTabProps {
+  onNavigateToUpload?: () => void;
+}
+
+export default function ArchiveTab({ onNavigateToUpload }: ArchiveTabProps = {}) {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -397,7 +401,17 @@ export default function ArchiveTab() {
                 ) : sortedDocs.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
-                      Keine Dokumente gefunden.
+                      <div className="flex flex-col items-center gap-3">
+                        <span>Keine Dokumente gefunden.</span>
+                        {onNavigateToUpload && (
+                          <button
+                            onClick={onNavigateToUpload}
+                            className="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-md transition-colors"
+                          >
+                            Neues Dokument hochladen
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ) : (

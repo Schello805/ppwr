@@ -20,18 +20,26 @@ echo "[1/4] 📦 Aktualisiere Paketquellen & installiere Basis-Tools..."
 apt-get update -y
 apt-get install -y curl git ca-certificates gnupg lsb-release
 
+# OS erkennen (Debian vs Ubuntu)
+OS="ubuntu"
+if [ -f /etc/os-release ]; then
+  . /etc/os-release
+  OS=$ID
+fi
+
 # Docker installieren, falls noch nicht vorhanden
 if ! command -v docker &> /dev/null; then
-  echo "[2/4] 🐳 Docker wird automatisch installiert..."
+  echo "[2/4] 🐳 Docker wird automatisch für $OS installiert..."
   mkdir -p /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  DOCKER_URL="https://download.docker.com/linux/${OS}"
+  curl -fsSL "${DOCKER_URL}/gpg" | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
   echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] ${DOCKER_URL} \
     $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
   apt-get update -y
   apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-  systemctl enable docker
-  systemctl start docker
+  systemctl enable docker 2>/dev/null || true
+  systemctl start docker 2>/dev/null || service docker start 2>/dev/null || true
   echo "✅ Docker wurde erfolgreich eingerichtet."
 else
   echo "[2/4] 🐳 Docker ist bereits installiert und betriebsbereit."
