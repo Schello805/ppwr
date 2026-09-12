@@ -28,7 +28,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-RUN apk add --no-libc6-compat openssl
+RUN apk add --no-libc6-compat openssl curl
 
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
@@ -40,5 +40,8 @@ COPY --from=build /app/.env.example ./.env
 RUN mkdir -p /app/uploads /app/data
 
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
 CMD ["sh", "-c", "npx prisma db push && node prisma/seed.js && npm run start"]
