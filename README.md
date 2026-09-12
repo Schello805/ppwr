@@ -35,12 +35,12 @@ Du musst kein Programmierer sein, um die Anwendung zu installieren. Wähle einfa
 
 ---
 
-### Weg A: Auf einem Linux-Server oder Proxmox LXC (Empfohlen)
+### Weg A: Auf einem Debian- / Ubuntu-Server, Proxmox LXC oder Docker Container (Empfohlen)
 
-Das mitgelieferte Installationsskript erledigt **alles vollautomatisch**: Es installiert alle nötigen Programme, richtet die Datenbank ein und startet die Web-App dauerhaft im Hintergrund.
+Das mitgelieferte Installationsskript erledigt **alles vollautomatisch**: Es erkennt automatisch das Betriebssystem (Debian oder Ubuntu), installiert Docker & alle Abhängigkeiten, richtet die Datenbank ein und startet die Web-App dauerhaft im Hintergrund.
 
 #### Schritt 1: Terminal / Konsole öffnen
-Verbinde dich per SSH oder über die Proxmox-Weboberfläche mit der Konsole deines Servers.
+Verbinde dich per SSH oder über die Konsole deines Debian/Ubuntu-Containers oder Servers.
 
 #### Schritt 2: Befehle kopieren & einfügen
 Kopiere diesen Befehlsblock, füge ihn in das Terminal ein und drücke **Enter**:
@@ -48,6 +48,7 @@ Kopiere diesen Befehlsblock, füge ihn in das Terminal ein und drücke **Enter**
 ```bash
 git clone https://github.com/Schello805/ppwr.git
 cd ppwr
+chmod +x install-ubuntu.sh
 sudo ./install-ubuntu.sh
 ```
 
