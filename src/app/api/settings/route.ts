@@ -61,6 +61,9 @@ export async function POST(req: NextRequest) {
   if (!currentUser) {
     return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
   }
+  if (currentUser.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Einstellungen können nur von Administratoren geändert werden.' }, { status: 403 });
+  }
 
   try {
     const body = await req.json();

@@ -11,6 +11,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'upload' | 'archive' | 'settings'>('upload');
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [username, setUsername] = useState<string | undefined>(undefined);
+  const [userRole, setUserRole] = useState<'ADMIN' | 'MANAGER' | 'VIEWER'>('ADMIN');
   const [refreshKey, setRefreshKey] = useState(0);
 
   const checkAuth = async () => {
@@ -20,6 +21,7 @@ export default function Home() {
         const data = await res.json();
         setAuthenticated(data.authenticated);
         setUsername(data.user?.username);
+        setUserRole(data.user?.role || 'ADMIN');
       } else {
         setAuthenticated(false);
         setUsername(undefined);
@@ -62,6 +64,7 @@ export default function Home() {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           username={username}
+          userRole={userRole}
           onLogout={handleLogout}
         />
 
@@ -83,8 +86,8 @@ export default function Home() {
       {/* Footer */}
       <footer className="w-full border-t border-slate-800/80 py-6 mt-12 bg-slate-950/80">
         <div className="w-[92%] max-w-[2000px] mx-auto text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 PPWR Compliance Manager • Revisionsgesicherte Verpackungscodes (QR / DataMatrix)</p>
-          <p className="font-mono text-slate-600">Ubuntu Linux ready • SHA-256 Audit Trail</p>
+          <p>© 2026 PPWR Compliance Manager • Rev. 1.1.0 (Enterprise RBAC & Multi-Lang Public Viewer)</p>
+          <p className="font-mono text-slate-600">Debian / Ubuntu Linux ready • SHA-256 Audit Trail • Rev. 1.1.0</p>
         </div>
       </footer>
     </div>

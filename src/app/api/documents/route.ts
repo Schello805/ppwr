@@ -48,6 +48,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
   }
 
+  if (currentUser.role === 'VIEWER') {
+    return NextResponse.json({ error: 'Keine Schreibrechte (Rolle VIEWER ist schreibgeschützt).' }, { status: 403 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;

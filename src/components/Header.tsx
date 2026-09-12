@@ -6,6 +6,7 @@ interface HeaderProps {
   activeTab: 'upload' | 'archive' | 'settings';
   setActiveTab: (tab: 'upload' | 'archive' | 'settings') => void;
   username?: string;
+  userRole?: 'ADMIN' | 'MANAGER' | 'VIEWER';
   onLogout: () => void;
 }
 
@@ -13,8 +14,17 @@ export default function Header({
   activeTab,
   setActiveTab,
   username,
+  userRole = 'ADMIN',
   onLogout,
 }: HeaderProps) {
+  const roleLabels: Record<string, { label: string; color: string }> = {
+    ADMIN: { label: 'Administrator', color: 'text-emerald-400' },
+    MANAGER: { label: 'Compliance Manager', color: 'text-sky-400' },
+    VIEWER: { label: 'Betrachter (Leserecht)', color: 'text-amber-400' },
+  };
+
+  const currentRole = roleLabels[userRole] || roleLabels.ADMIN;
+
   return (
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-700/60 backdrop-blur-xl bg-slate-950/80">
       <div className="w-[92%] max-w-[2000px] mx-auto h-20 flex items-center justify-between gap-6">
@@ -93,7 +103,9 @@ export default function Header({
               </div>
               <div className="text-left hidden sm:block">
                 <div className="font-semibold text-slate-200 leading-none">{username || 'Admin'}</div>
-                <div className="text-[10px] text-slate-500 leading-tight mt-0.5">Administrator</div>
+                <div className={`text-[10px] ${currentRole.color} leading-tight mt-0.5 font-medium`}>
+                  {currentRole.label}
+                </div>
               </div>
             </div>
 

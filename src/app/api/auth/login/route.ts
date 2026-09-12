@@ -24,9 +24,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ungültige Anmeldedaten.' }, { status: 401 });
     }
 
-    setSessionCookie(user.username);
+    setSessionCookie(user.username, user.role || 'ADMIN');
 
-    return NextResponse.json({ success: true, user: { username: user.username, name: user.name } });
+    return NextResponse.json({
+      success: true,
+      user: { username: user.username, name: user.name, role: user.role || 'ADMIN' },
+    });
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json({ error: 'Interner Serverfehler' }, { status: 500 });

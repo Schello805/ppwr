@@ -11,6 +11,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!currentUser) {
     return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
   }
+  if (currentUser.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Das Löschen von Dokumenten ist nur Administratoren gestattet.' }, { status: 403 });
+  }
 
   const documentId = params.id;
 

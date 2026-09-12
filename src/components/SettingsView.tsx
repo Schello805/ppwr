@@ -21,6 +21,9 @@ import {
   Copy,
   Clock,
   ExternalLink,
+  Users,
+  UserPlus,
+  Shield,
 } from 'lucide-react';
 import Tooltip from './Tooltip';
 
@@ -29,7 +32,17 @@ interface SettingsViewProps {
 }
 
 export default function SettingsView({ onSettingsUpdated }: SettingsViewProps) {
-  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'smtp' | 'security'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'smtp' | 'security' | 'users'>('general');
+
+  // User Management RBAC
+  const [usersList, setUsersList] = useState<{ id: string; username: string; name?: string; role: string; createdAt: string }[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [newUserUser, setNewUserUser] = useState('');
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserPass, setNewUserPass] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'ADMIN' | 'MANAGER' | 'VIEWER'>('MANAGER');
+  const [userCreating, setUserCreating] = useState(false);
+  const [userMsg, setUserMsg] = useState({ type: '', text: '' });
 
   // General Settings
   const [customDomain, setCustomDomain] = useState('');
@@ -102,9 +115,65 @@ export default function SettingsView({ onSettingsUpdated }: SettingsViewProps) {
     }
   };
 
+  const loadUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await fetch('/api/users');
+      if (res.ok) {
+        const data = await res.json();
+        setUsersList(data.users || []);
+      }
+    } catch (err) {
+      console.error('Error loading users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      loadUsers();
+    }
+  }, [activeTab]);
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUserCreating(true);
+    setUserMsg({ type: '', text: '' });
+
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: newUserUser,
+          name: newUserName,
+          password: newUserPass,
+          role: newUserRole,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setUserMsg({ type: 'success', text: `Benutzer "${data.user.username}" erfolgreich als ${data.user.role} angelegt!` });
+        setNewUserUser('');
+        setNewUserName('');
+        setNewUserPass('');
+        setNewUserRole('MANAGER');
+        loadUsers();
+      } else {
+        setUserMsg({ type: 'error', text: data.error || 'Fehler beim Anlegen des Benutzers.' });
+      }
+    } catch {
+      setUserMsg({ type: 'error', text: 'Netzwerkfehler beim Anlegen des Benutzers.' });
+    } finally {
+      setUserCreating(false);
+    }
+  };
 
   const copyToClipboard = (text: string, fieldId: string) => {
     navigator.clipboard.writeText(text);
@@ -397,6 +466,21 @@ export default function SettingsView({ onSettingsUpdated }: SettingsViewProps) {
               <div className="text-left">
                 <div>Sicherheit & CRON</div>
                 <div className="text-xs opacity-75">Token, Cronjob & Passwort</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                activeTab === 'users'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+              }`}
+            >
+              <Users size={18} />
+              <div className="text-left">
+                <div>Benutzer & Rollen</div>
+                <div className="text-xs opacity-75">RBAC Rechteverwaltung</div>
               </div>
             </button>
           </div>
@@ -943,6 +1027,168 @@ export default function SettingsView({ onSettingsUpdated }: SettingsViewProps) {
                       )}
                     </button>
                   </form>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 5: BENUTZER & ROLLEN (RBAC) */}
+            {activeTab === 'users' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                      <Users className="text-emerald-400" size={20} />
+                      Benutzerverwaltung & Rollen (RBAC)
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Verwalte Zugriffsberechtigungen für Teammitglieder (Admin, Compliance Manager, Betrachter).
+                    </p>
+                  </div>
+                </div>
+
+                {userMsg.text && (
+                  <div
+                    className={`p-4 rounded-xl text-xs flex items-center gap-2 ${
+                      userMsg.type === 'success'
+                        ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-300'
+                        : 'bg-red-950/60 border border-red-500/40 text-red-300'
+                    }`}
+                  >
+                    <AlertCircle size={16} />
+                    <span>{userMsg.text}</span>
+                  </div>
+                )}
+
+                {/* User Creation Form */}
+                <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <UserPlus size={16} className="text-emerald-400" />
+                    Neuen Benutzer anlegen
+                  </h3>
+
+                  <form onSubmit={handleCreateUser} className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="space-y-1">
+                      <label className="font-semibold text-slate-300">Benutzername</label>
+                      <input
+                        type="text"
+                        value={newUserUser}
+                        onChange={(e) => setNewUserUser(e.target.value)}
+                        required
+                        placeholder="z. B. m.schmidt"
+                        className="input-field"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-semibold text-slate-300">Vollständiger Name</label>
+                      <input
+                        type="text"
+                        value={newUserName}
+                        onChange={(e) => setNewUserName(e.target.value)}
+                        placeholder="z. B. Michael Schmidt"
+                        className="input-field"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-semibold text-slate-300">Passwort</label>
+                      <input
+                        type="password"
+                        value={newUserPass}
+                        onChange={(e) => setNewUserPass(e.target.value)}
+                        required
+                        minLength={6}
+                        placeholder="••••••••"
+                        className="input-field font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-semibold text-slate-300">Rolle / Berechtigung</label>
+                      <select
+                        value={newUserRole}
+                        onChange={(e) => setNewUserRole(e.target.value as any)}
+                        className="input-field bg-slate-900 text-slate-200 cursor-pointer"
+                      >
+                        <option value="ADMIN">ADMIN (Vollzugriff & System-Einstellungen)</option>
+                        <option value="MANAGER">MANAGER (Dokumente uploaden & bearbeiten)</option>
+                        <option value="VIEWER">VIEWER (Nur-Lesezugriff auf Archiv & Audit Log)</option>
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-2 pt-2">
+                      <button
+                        type="submit"
+                        disabled={userCreating}
+                        className="btn-primary py-2 px-5 text-xs flex items-center gap-2"
+                      >
+                        {userCreating ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Benutzer wird angelegt...
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus size={15} />
+                            Benutzer anlegen
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Existing Users Table */}
+                <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
+                  <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Shield size={16} className="text-sky-400" />
+                      Registrierte System-Benutzer
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={loadUsers}
+                      className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+                    >
+                      <RefreshCw size={12} className={loadingUsers ? 'animate-spin' : ''} />
+                      Aktualisieren
+                    </button>
+                  </div>
+
+                  {loadingUsers ? (
+                    <div className="p-8 text-center text-xs text-slate-500">Lade Benutzerliste...</div>
+                  ) : usersList.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-500">Keine Benutzer gefunden.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-900/80 text-slate-400 uppercase tracking-wider text-[10px]">
+                          <tr>
+                            <th className="px-4 py-3">Benutzername</th>
+                            <th className="px-4 py-3">Name</th>
+                            <th className="px-4 py-3">Rolle</th>
+                            <th className="px-4 py-3">Erstellt am</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {usersList.map((u) => (
+                            <tr key={u.id} className="hover:bg-slate-850/50 transition-colors">
+                              <td className="px-4 py-3 font-semibold text-slate-200">{u.username}</td>
+                              <td className="px-4 py-3 text-slate-400">{u.name || '-'}</td>
+                              <td className="px-4 py-3">
+                                {u.role === 'ADMIN' && <span className="badge-green">ADMIN</span>}
+                                {u.role === 'MANAGER' && <span className="badge-blue">MANAGER</span>}
+                                {u.role === 'VIEWER' && <span className="badge-amber">VIEWER</span>}
+                              </td>
+                              <td className="px-4 py-3 font-mono text-slate-500">
+                                {new Date(u.createdAt).toLocaleDateString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

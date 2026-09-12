@@ -18,6 +18,7 @@ async function main() {
         username: adminUser,
         name: 'PPWR Administrator',
         passwordHash,
+        role: 'ADMIN',
       },
     });
     console.log(`Initial admin user created: ${adminUser}`);

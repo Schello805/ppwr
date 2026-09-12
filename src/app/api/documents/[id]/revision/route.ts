@@ -12,6 +12,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!currentUser) {
     return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
   }
+  if (currentUser.role === 'VIEWER') {
+    return NextResponse.json({ error: 'Keine Schreibrechte (Rolle VIEWER ist schreibgeschützt).' }, { status: 403 });
+  }
 
   const documentId = params.id;
 
