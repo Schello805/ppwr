@@ -1,0 +1,15 @@
+.git
+.github
+.next
+node_modules
+data
+uploads/*
+!uploads/.gitkeep
+.env
+.env.*
+!.env.example
+*.log
+*.tsbuildinfo
+README.md
+docker-compose.yml
+install*.sh

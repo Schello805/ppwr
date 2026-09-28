@@ -101,6 +101,53 @@ npm run dev
 
 ---
 
+### Weg C: Installation auf CapRover
+
+Das Repository enthält eine `captain-definition` und kann direkt über CapRover gebaut werden.
+
+#### 1. App anlegen
+
+Lege in CapRover unter **Apps → One-Click Apps/Databases → Create New App** eine neue App an, zum Beispiel `ppwr`. Stelle unter **HTTP Settings** den **Container HTTP Port** auf `3000`. Verbinde dort außerdem deine Domain und aktiviere anschließend HTTPS sowie **Force HTTPS**.
+
+#### 2. Persistente Verzeichnisse einrichten
+
+Füge unter **App Configs → Persistent Directories** diese beiden Einträge hinzu:
+
+| Path in App | Label |
+|---|---|
+| `/app/data` | `ppwr-data` |
+| `/app/uploads` | `ppwr-uploads` |
+
+Ohne diese Einträge gehen Datenbank und hochgeladene Dokumente bei einem neuen Deployment verloren. Die App verwendet SQLite und sollte deshalb in CapRover mit genau **einer Instanz** betrieben werden.
+
+#### 3. Umgebungsvariablen setzen
+
+Füge unter **App Configs → Environmental Variables** folgende Variablen hinzu:
+
+```text
+DATABASE_URL=file:/app/data/ppwr.db
+NEXT_PUBLIC_BASE_URL=https://ppwr.deine-domain.de
+JWT_SECRET=EIN_LANGER_ZUFAELLIGER_GEHEIMER_WERT
+ADMIN_INITIAL_USER=admin
+ADMIN_INITIAL_PASSWORD=EIN_SICHERES_ERSTPASSWORT
+```
+
+`NEXT_PUBLIC_BASE_URL` muss der öffentlich erreichbaren HTTPS-Adresse entsprechen. Verwende für `JWT_SECRET` mindestens 32 zufällige Zeichen und ändere das Erstpasswort nach der ersten Anmeldung. SMTP und der Cron-Schlüssel können bei Bedarf ebenfalls als Umgebungsvariablen gesetzt oder später in den App-Einstellungen konfiguriert werden.
+
+#### 4. Repository deployen
+
+Unter **Deployment** kannst du entweder dein GitHub-/GitLab-/Bitbucket-Repository verbinden oder den dort angezeigten CapRover-CLI-Befehl im Projektordner ausführen. CapRover erkennt die `captain-definition` und baut das Dockerfile.
+
+Nach dem Deployment prüfst du:
+
+```text
+https://ppwr.deine-domain.de/api/health
+```
+
+Die Antwort muss `"status":"healthy"` und `"database":"connected"` enthalten.
+
+---
+
 ## 🔑 Erste Schritte nach der Installation (Wichtig!)
 
 Nachdem du dich das erste Mal angemeldet hast (Benutzer: `admin`, Passwort: `password123`), solltest du 3 Dinge einstellen:
