@@ -4,7 +4,7 @@
 FROM node:20-alpine AS base
 
 # Install dependencies needed for SQLite and Prisma
-RUN apk add --no-libc6-compat openssl
+RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-RUN apk add --no-libc6-compat openssl curl
+RUN apk add --no-cache libc6-compat openssl curl
 
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
